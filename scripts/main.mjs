@@ -1,4 +1,4 @@
-import { QuickMinimalMonsterSheet } from "./qmms-monster-sheet.js";
+import { QuickMinimalMonsterSheet } from "./qmms-monster-sheet.mjs";
 
 Hooks.once("init", () => {
   console.log("Quick Minimal Monster Sheet for 5e | Initialized");
