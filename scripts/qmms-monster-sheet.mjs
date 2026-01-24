@@ -1,27 +1,29 @@
-export class QuickMinimalMonsterSheet extends globalThis.ActorSheetV2 {
-  static DEFAULT_OPTIONS = foundry.utils.mergeObject(super.DEFAULT_OPTIONS ?? {}, {
-    template: "modules/quick-minimal-monster-sheet-for-5e/templates/qmms-monster-sheet.hbs",
-    classes: ["qmms-sheet"],
-    width: 800,
-    height: 600
-  });
+export class QuickMinimalMonsterSheet extends ActorSheet {
+  static get defaultOptions() {
+    return foundry.utils.mergeObject(super.defaultOptions, {
+      template: "modules/quick-minimal-monster-sheet-for-5e/templates/qmms-monster-sheet.hbs",
+      classes: ["dnd5e", "sheet", "actor", "qmms-sheet"],
+      width: 800,
+      height: 600
+    });
+  }
 
-  async _prepareContext(options) {
-    const context = await super._prepareContext?.(options) ?? {};
+  getData(options) {
+    const context = super.getData(options);
+    const system = this.actor.system ?? {};
 
     context.qmms = {
-      ac: foundry.utils.getProperty(this.actor, "system.attributes.ac.value") ?? 0,
+      ac: system.attributes?.ac?.value ?? 0,
       hp: {
-        value: foundry.utils.getProperty(this.actor, "system.attributes.hp.value") ?? 0,
-        max: foundry.utils.getProperty(this.actor, "system.attributes.hp.max") ?? 1
+        value: system.attributes?.hp?.value ?? 0,
+        max: system.attributes?.hp?.max ?? 1
       },
-      cr: foundry.utils.getProperty(this.actor, "system.details.cr") ?? "",
-      biography: foundry.utils.getProperty(this.actor, "system.details.biography.value") ?? ""
+      cr: system.details?.cr ?? "",
+      biography: system.details?.biography?.value ?? ""
     };
 
     return context;
   }
-
 
   async _updateObject(event, formData) {
     const updateData = {
