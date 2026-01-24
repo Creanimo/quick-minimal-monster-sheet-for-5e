@@ -1,0 +1,9 @@
+{
+  "QMMS": {
+    "Title": "Quick Minimal Monster Sheet for 5e",
+    "ArmorClassLabel": "Armor Class",
+    "CurrentHPLabel": "Current HP",
+    "MaxHPLabel": "Max HP",
+    "ChallengeRatingLabel": "Challenge Rating"
+  }
+}

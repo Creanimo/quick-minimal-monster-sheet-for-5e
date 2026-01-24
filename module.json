@@ -1,0 +1,17 @@
+{
+  "id": "Quick-Minimal-Monster-Sheet-for-5e-in-Foundry-VTT",
+  "title": "Quick Minimal Monster Sheet for 5e",
+  "description": "A minimal alternative character sheet for D&D 5e monsters, optimized for quick stat entry in your own shorthand.",
+  "version": "0.1.0",
+  "minimumCoreVersion": "13",
+  "compatibleCoreVersion": "13",
+  "author": "Ferdinand Engländer",
+  "scripts": [
+    "scripts/main.js"
+  ],
+  "styles": [
+    "styles/qmms.css"
+  ],
+  "manifest": "https://raw.github.com/Creanimo/Quick-Minimal-Monster-Sheet-for-5e-in-Foundry-VTT/main/module.json",
+  "download": "https://github.com/Creanimo/Quick-Minimal-Monster-Sheet-for-5e-in-Foundry-VTT/releases/latest/download/module.zip"
+}
