@@ -1,5 +1,5 @@
 {
-  "id": "Quick-Minimal-Monster-Sheet-for-5e-in-Foundry-VTT",
+  "id": "quick-minimal-monster-sheet-for-5e",
   "title": "Quick Minimal Monster Sheet for 5e",
   "description": "A minimal alternative character sheet for D&D 5e monsters, optimized for quick stat entry in your own shorthand.",
   "version": "0.1.0",
@@ -7,7 +7,7 @@
   "compatibleCoreVersion": "13",
   "author": "Ferdinand Engländer",
   "scripts": [
-    "scripts/main.js"
+    "scripts/main.js
   ],
   "styles": [
     "styles/qmms.css"
