@@ -1,3 +1,5 @@
+// scripts/qmms-monster-sheet.mjs
+
 export function createQuickMinimalMonsterSheetClass({
   moduleId = "quick-minimal-monster-sheet-for-5e",
   templatePath = "modules/quick-minimal-monster-sheet-for-5e/templates/qmms-monster-sheet.hbs"
@@ -5,14 +7,9 @@ export function createQuickMinimalMonsterSheetClass({
   const ActorSheetV2 = foundry?.applications?.sheets?.ActorSheetV2;
   const HandlebarsApplicationMixin = foundry?.applications?.api?.HandlebarsApplicationMixin;
 
-  if (!ActorSheetV2) {
-    throw new Error(`${moduleId} | ActorSheetV2 not available. Create the class after Hooks.once("ready").`);
-  }
-  if (!HandlebarsApplicationMixin) {
-    throw new Error(`${moduleId} | HandlebarsApplicationMixin not available. Create the class after Hooks.once("ready").`);
-  }
+  if (!ActorSheetV2) throw new Error(`${moduleId} | ActorSheetV2 not available. Create the class after Hooks.once("ready").`);
+  if (!HandlebarsApplicationMixin) throw new Error(`${moduleId} | HandlebarsApplicationMixin not available. Create the class after Hooks.once("ready").`);
 
-  // Define the submit handler in factory scope so DEFAULT_OPTIONS can reference it safely.
   async function onSubmitForm(event, form, formData) {
     const data = formData?.object ?? formData;
 
@@ -24,26 +21,30 @@ export function createQuickMinimalMonsterSheetClass({
       "system.details.biography.value": foundry.utils.getProperty(data, "system.details.biography.value")
     };
 
-    // Strip undefined (avoid overwriting existing values)
     for (const [k, v] of Object.entries(updateData)) {
       if (v === undefined) delete updateData[k];
     }
-
     if (!Object.keys(updateData).length) return;
 
-    // "this" is the sheet instance (DocumentSheetV2-style binding)
     await this.document.update(updateData);
   }
 
   const Base = HandlebarsApplicationMixin(ActorSheetV2);
 
   return class QuickMinimalMonsterSheet extends Base {
+    static PARTS = {
+      form: {
+        template: templatePath,
+        templates: [templatePath],
+        root: true
+      }
+    };
+
     static DEFAULT_OPTIONS = foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
       id: `${moduleId}-sheet`,
       classes: ["dnd5e", "sheet", "actor", "qmms-sheet"],
-      template: templatePath,
 
-      // ApplicationV2 form wiring
+      // Use a form root element and wire submission handling.
       tag: "form",
       form: {
         handler: onSubmitForm,
@@ -65,6 +66,7 @@ export function createQuickMinimalMonsterSheetClass({
         foundry.utils.getProperty(system, "details.biography") ??
         "";
 
+      // v13 namespaced TextEditor implementation
       const TextEditorImpl = foundry.applications.ux.TextEditor.implementation;
 
       let biographyEnriched = biography;
@@ -92,11 +94,6 @@ export function createQuickMinimalMonsterSheetClass({
       };
 
       return context;
-    }
-
-    _onRender(context, options) {
-      super._onRender?.(context, options);
-      // We'll add +X/-Y HP logic here next.
     }
   };
 }
