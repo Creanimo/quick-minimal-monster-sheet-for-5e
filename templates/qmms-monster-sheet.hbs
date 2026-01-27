@@ -32,7 +32,7 @@
       <div class="qmms-bio-toolbar">
         <button type="button" data-action="qmms-done-bio">Done</button>
       </div>
-      {{editor qmms.biography target="system.details.biography.value" editable=qmms.canEdit engine="prosemirror"}}
+      {{editor qmms.biography target="system.details.biography.value" editable=qmms.bioEditing engine="prosemirror"}}
     {{else}}
       <div class="qmms-bio-preview" data-action="qmms-edit-bio">
         {{{qmms.biographyEnriched}}}

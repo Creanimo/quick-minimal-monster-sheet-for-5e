@@ -94,7 +94,6 @@ export function createQuickMinimalMonsterSheetClass({
                 biographyEnriched,
 
                 bioEditing: this.#bioEditing,
-                canEdit: context.editable ?? this.isEditable,
             };
 
             return context;
@@ -118,21 +117,17 @@ export function createQuickMinimalMonsterSheetClass({
             });
             const toggle = root.querySelector("[data-action='qmms-toggle-bio']");
             const done = root.querySelector("[data-action='qmms-done-bio']");
-            const preview = root.querySelector("[data-action='qmms-edit-bio']");
 
             const enterEdit = async () => {
                 if (!(context?.qmms?.canEdit ?? this.isEditable)) return;
                 this.#bioEditing = true;
                 await this.render({force: true});
-                console.log("Editor is now editable - isEditable: " + this.isEditable)
             };
 
             const exitEdit = async () => {
-                // Save changes before leaving edit mode.
-                await this.submit(); // ApplicationV2 submit (calls your form handler). [web:195]
+                await this.submit();
                 this.#bioEditing = false;
                 await this.render({force: true});
-                console.log("Editor no longer editable - isEditable: " + this.isEditable)
             };
 
             toggle?.addEventListener("click", async (ev) => {
