@@ -28,13 +28,11 @@
   </div>
 
   <div class="freetext">
-      <prose-mirror name="biography" value="{{ system.details.biography.value }}" toggled>{{{ qmms.biographyEnriched }}}</prose-mirror>
     {{#if qmms.bioEditing}}
       <div class="qmms-bio-toolbar">
         <button type="button" data-action="qmms-done-bio">Done</button>
       </div>
-        <prose-mirror name="biography" value="{{ system.details.biography.value }}" toggled>{{{ qmms.biographyEnriched }}}</prose-mirror>
-      {{editor qmms.biography target="system.details.biography.value" engine="prosemirror"}}
+        <prose-mirror name="biography" value="system.details.biography.value" toggled>{{{ qmms.biographyEnriched }}}</prose-mirror>
     {{else}}
       <div class="qmms-bio-preview" data-action="qmms-edit-bio">
         {{{ enrichedBiography }}}
