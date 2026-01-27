@@ -124,6 +124,7 @@ export function createQuickMinimalMonsterSheetClass({
                 if (!(context?.qmms?.canEdit ?? this.isEditable)) return;
                 this.#bioEditing = true;
                 await this.render({force: true});
+                console.log("Editor is now editable - isEditable: " + this.isEditable)
             };
 
             const exitEdit = async () => {
@@ -131,6 +132,7 @@ export function createQuickMinimalMonsterSheetClass({
                 await this.submit(); // ApplicationV2 submit (calls your form handler). [web:195]
                 this.#bioEditing = false;
                 await this.render({force: true});
+                console.log("Editor no longer editable - isEditable: " + this.isEditable)
             };
 
             toggle?.addEventListener("click", async (ev) => {
