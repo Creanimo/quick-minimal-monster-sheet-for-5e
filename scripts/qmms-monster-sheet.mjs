@@ -30,8 +30,6 @@ export function createQuickMinimalMonsterSheetClass({
     const Base = HandlebarsApplicationMixin(ActorSheetV2);
 
     return class QuickMinimalMonsterSheet extends Base {
-        #bioEditing = false;
-
         static PARTS = {
             form: {
                 template: templatePath,
@@ -43,14 +41,12 @@ export function createQuickMinimalMonsterSheetClass({
         static DEFAULT_OPTIONS = foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
             id: `${moduleId}-sheet`,
             classes: ["dnd5e", "sheet", "actor", "qmms-sheet"],
-
             tag: "form",
             form: {
                 handler: onSubmitForm,
                 submitOnChange: false,
                 closeOnSubmit: false
             },
-
             position: {width: 520, height: 720}
         });
 
@@ -65,21 +61,20 @@ export function createQuickMinimalMonsterSheetClass({
                 foundry.utils.getProperty(system, "details.biography") ??
                 "";
 
+            // Enriched preview HTML for inline rolls, links, etc. [web:229]
             const TextEditorImpl = foundry.applications.ux.TextEditor.implementation;
 
             let biographyEnriched = biography;
-            if (!this.#bioEditing) {
-                try {
-                    biographyEnriched = await TextEditorImpl.enrichHTML(biography ?? "", {
-                        async: true,
-                        documents: true,
-                        links: true,
-                        rolls: true,
-                        rollData: typeof actor.getRollData === "function" ? actor.getRollData() : actor.system
-                    });
-                } catch (err) {
-                    console.warn(`${moduleId} | Biography enrichment failed`, err);
-                }
+            try {
+                biographyEnriched = await TextEditorImpl.enrichHTML(biography ?? "", {
+                    async: true,
+                    documents: true,
+                    links: true,
+                    rolls: true,
+                    rollData: typeof actor.getRollData === "function" ? actor.getRollData() : actor.system
+                });
+            } catch (err) {
+                console.warn(`${moduleId} | Biography enrichment failed`, err);
             }
 
             context.qmms = {
@@ -89,11 +84,8 @@ export function createQuickMinimalMonsterSheetClass({
                     max: foundry.utils.getProperty(system, "attributes.hp.max") ?? 1
                 },
                 cr: foundry.utils.getProperty(system, "details.cr") ?? "",
-
                 biography,
-                biographyEnriched,
-
-                bioEditing: this.#bioEditing,
+                biographyEnriched
             };
 
             return context;
@@ -105,6 +97,7 @@ export function createQuickMinimalMonsterSheetClass({
             const root = this.element;
             if (!root) return;
 
+            // Autosave numeric fields
             const autosaveSelector = [
                 'input[name="system.attributes.ac.value"]',
                 'input[name="system.attributes.hp.value"]',
@@ -115,31 +108,12 @@ export function createQuickMinimalMonsterSheetClass({
             root.querySelectorAll(autosaveSelector).forEach(el => {
                 el.addEventListener("change", () => this.submit());
             });
-            const toggle = root.querySelector("[data-action='qmms-toggle-bio']");
-            const done = root.querySelector("[data-action='qmms-done-bio']");
 
-            const enterEdit = async () => {
-                this.#bioEditing = true;
-                await this.render({force: true});
-            };
-
-            const exitEdit = async () => {
-                await this.submit();
-                this.#bioEditing = false;
-                await this.render({force: true});
-            };
-
-            toggle?.addEventListener("click", async (ev) => {
-                ev.preventDefault();
-                if (this.#bioEditing) await exitEdit();
-                else await enterEdit();
-            });
-
-            done?.addEventListener("click", async (ev) => {
-                ev.preventDefault();
-                await exitEdit();
-            });
-
+            // Optional: Save when prose-mirror changes.
+            // (Exact event name can vary; if it doesn’t fire, you can just rely on a Done button or manual submit.)
+            const pm = root.querySelector('prose-mirror[name="system.details.biography.value"]');
+            pm?.addEventListener("change", () => this.submit());
+            pm?.addEventListener("input", () => this.submit());
         }
     };
 }
