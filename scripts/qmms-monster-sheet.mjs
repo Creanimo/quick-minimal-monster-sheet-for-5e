@@ -119,7 +119,6 @@ export function createQuickMinimalMonsterSheetClass({
             const done = root.querySelector("[data-action='qmms-done-bio']");
 
             const enterEdit = async () => {
-                if (!(context?.qmms?.bioEditing ?? this.isEditable)) return;
                 this.#bioEditing = true;
                 await this.render({force: true});
             };

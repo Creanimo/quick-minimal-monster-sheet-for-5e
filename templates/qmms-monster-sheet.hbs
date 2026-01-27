@@ -3,7 +3,7 @@
     <h1>{{actor.name}}</h1>
 
     <div class="qmms-header-controls">
-      <button type="button" data-action="qmms-toggle-bio" {{#unless qmms.canEdit}}disabled{{/unless}}>
+      <button type="button" data-action="qmms-toggle-bio" {{#unless qmms.bioEditing}}disabled{{/unless}}>
         {{#if qmms.bioEditing}}Preview{{else}}Edit Notes{{/if}}
       </button>
     </div>
