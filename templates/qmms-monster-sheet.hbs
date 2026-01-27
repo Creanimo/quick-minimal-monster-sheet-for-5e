@@ -22,6 +22,19 @@
   </div>
 
   <div class="freetext">
-    <textarea name="system.details.biography.value">{{qmms.biography}}</textarea>
+    {{#if qmms.bioEditing}}
+      <div class="qmms-bio-toolbar">
+        <button type="button" data-action="qmms-done-bio">Done</button>
+      </div>
+
+      {{!-- Rich text editor bound to actor.system.details.biography.value --}}
+      {{editor qmms.biography target="system.details.biography.value" editable=true engine="prosemirror"}}
+    {{else}}
+      {{!-- Clickable preview (enriched HTML with inline roll buttons) --}}
+      <div class="qmms-bio-preview" data-action="qmms-edit-bio">
+        {{{qmms.biographyEnriched}}}
+      </div>
+    {{/if}}
   </div>
 </div>
+

@@ -1,4 +1,3 @@
-// scripts/qmms-monster-sheet.mjs
 
 export function createQuickMinimalMonsterSheetClass({
   moduleId = "quick-minimal-monster-sheet-for-5e",
@@ -32,6 +31,8 @@ export function createQuickMinimalMonsterSheetClass({
   const Base = HandlebarsApplicationMixin(ActorSheetV2);
 
   return class QuickMinimalMonsterSheet extends Base {
+    #bioEditing = false;
+
     static PARTS = {
       form: {
         template: templatePath,
@@ -44,11 +45,10 @@ export function createQuickMinimalMonsterSheetClass({
       id: `${moduleId}-sheet`,
       classes: ["dnd5e", "sheet", "actor", "qmms-sheet"],
 
-      // Use a form root element and wire submission handling.
       tag: "form",
       form: {
         handler: onSubmitForm,
-        submitOnChange: true,
+        submitOnChange: false,
         closeOnSubmit: false
       },
 
@@ -66,20 +66,21 @@ export function createQuickMinimalMonsterSheetClass({
         foundry.utils.getProperty(system, "details.biography") ??
         "";
 
-      // v13 namespaced TextEditor implementation
       const TextEditorImpl = foundry.applications.ux.TextEditor.implementation;
 
       let biographyEnriched = biography;
-      try {
-        biographyEnriched = await TextEditorImpl.enrichHTML(biography ?? "", {
-          async: true,
-          documents: true,
-          links: true,
-          rolls: true,
-          rollData: typeof actor.getRollData === "function" ? actor.getRollData() : actor.system
-        });
-      } catch (err) {
-        console.warn(`${moduleId} | Biography enrichment failed`, err);
+      if (!this.#bioEditing) {
+        try {
+          biographyEnriched = await TextEditorImpl.enrichHTML(biography ?? "", {
+            async: true,
+            documents: true,
+            links: true,
+            rolls: true,
+            rollData: typeof actor.getRollData === "function" ? actor.getRollData() : actor.system
+          });
+        } catch (err) {
+          console.warn(`${moduleId} | Biography enrichment failed`, err);
+        }
       }
 
       context.qmms = {
@@ -89,11 +90,61 @@ export function createQuickMinimalMonsterSheetClass({
           max: foundry.utils.getProperty(system, "attributes.hp.max") ?? 1
         },
         cr: foundry.utils.getProperty(system, "details.cr") ?? "",
+
         biography,
-        biographyEnriched
+        biographyEnriched,
+
+        bioEditing: this.#bioEditing
       };
 
       return context;
+    }
+
+    _onRender(context, options) {
+      super._onRender?.(context, options);
+
+      const root = this.element;
+      if (!root) return;
+
+      const autosaveSelector = [
+        'input[name="system.attributes.ac.value"]',
+        'input[name="system.attributes.hp.value"]',
+        'input[name="system.attributes.hp.max"]',
+        'input[name="system.details.cr"]'
+      ].join(",");
+
+      root.querySelectorAll(autosaveSelector).forEach(el => {
+        el.addEventListener("change", () => this.submit());
+      });
+
+      // Click preview -> switch to editor
+      root.querySelector("[data-action='qmms-edit-bio']")?.addEventListener("click", async (ev) => {
+        ev.preventDefault();
+        this.#bioEditing = true;
+        await this.render({ force: true });
+      });
+
+      // Done button -> submit -> switch back to preview
+      root.querySelector("[data-action='qmms-done-bio']")?.addEventListener("click", async (ev) => {
+        ev.preventDefault();
+
+        // Submits the ApplicationV2 form using the configured handler. [web:195]
+        await this.submit();
+
+        this.#bioEditing = false;
+        await this.render({ force: true });
+      });
+
+      // Optional: Esc to exit editor (submit, then preview)
+      root.addEventListener("keydown", async (ev) => {
+        if (!this.#bioEditing) return;
+        if (ev.key !== "Escape") return;
+
+        ev.preventDefault();
+        await this.submit();
+        this.#bioEditing = false;
+        await this.render({ force: true });
+      });
     }
   };
 }
