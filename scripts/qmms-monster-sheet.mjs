@@ -139,11 +139,6 @@ export function createQuickMinimalMonsterSheetClass({
                 else await enterEdit();
             });
 
-            preview?.addEventListener("click", async (ev) => {
-                ev.preventDefault();
-                await enterEdit();
-            });
-
             done?.addEventListener("click", async (ev) => {
                 ev.preventDefault();
                 await exitEdit();

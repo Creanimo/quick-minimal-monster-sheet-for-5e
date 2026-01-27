@@ -32,9 +32,6 @@
       <div class="qmms-bio-toolbar">
         <button type="button" data-action="qmms-done-bio">Done</button>
       </div>
-
-      {{!-- Official v13 editor component (ProseMirror). [web:207]
-           Important: bind editable to qmms.canEdit so focus/typing behaves correctly. --}}
       {{editor qmms.biography target="system.details.biography.value" editable=qmms.canEdit engine="prosemirror"}}
     {{else}}
       <div class="qmms-bio-preview" data-action="qmms-edit-bio">
