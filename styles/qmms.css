@@ -1,8 +1,4 @@
 .qmms {
-    input {
-        height: auto;
-    }
-
     .qmms__header {
         display: grid;
         grid-template-columns: 200px 1fr 100px;

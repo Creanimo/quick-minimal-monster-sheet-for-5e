@@ -12,6 +12,7 @@ export function createQuickMinimalMonsterSheetClass({
         const data = formData?.object ?? formData;
 
         const updateData = {
+            "actor.name": foundry.utils.getProperty(actor, "name"),
             "system.attributes.ac.value": foundry.utils.getProperty(data, "system.attributes.ac.value"),
             "system.attributes.hp.value": foundry.utils.getProperty(data, "system.attributes.hp.value"),
             "system.attributes.hp.max": foundry.utils.getProperty(data, "system.attributes.hp.max"),
@@ -124,13 +125,21 @@ export function createQuickMinimalMonsterSheetClass({
             if (!root) return;
 
             const autosaveSelector = [
+                'input[name="actor.name"]',
+            ].join(",");
+
+            root.querySelectorAll(autosaveWithMathSelector).forEach(input => {
+                input.addEventListener("change", () => this.submit())
+            });
+
+            const autosaveWithMathSelector = [
                 'input[name="system.attributes.ac.value"]',
                 'input[name="system.attributes.hp.value"]',
                 'input[name="system.attributes.hp.max"]',
                 'input[name="system.details.cr"]'
             ].join(",");
 
-            root.querySelectorAll(autosaveSelector).forEach(input => {
+            root.querySelectorAll(autosaveWithMathSelector).forEach(input => {
                 input.addEventListener("change", (event) => {
                     const rawValue = input.value;
                     try {

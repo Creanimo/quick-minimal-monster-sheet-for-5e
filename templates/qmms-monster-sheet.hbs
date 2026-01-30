@@ -1,15 +1,18 @@
 <div class="qmms">
     <header class="qmms__header">
-        <h1 class="qmms__name">{{qmms.name}}</h1>
+        <h1 class="qmms__name"><label>Name</label><input type="text" name="actor.name" value="{{qmms.name}}"/></h1>
         <div class="qmms__AC">
-            <label>AC<input type="text" name="system.attributes.ac.value" value="{{qmms.ac}}"/></label>
+            <label>AC</label><input type="text" name="system.attributes.ac.value" value="{{qmms.ac}}"/>
         </div>
         <div class="qmms__CR">
-            <label>CR<input type="text" name="system.details.cr" value="{{qmms.cr}}"/></label>
+            <label>CR</label><input type="text" name="system.details.cr" value="{{qmms.cr}}"/>
         </div>
         <div class="qmms__health">
-            <label>Current HP<input type="text" name="system.attributes.hp.value" value="{{qmms.hp.value}}"/></label>
-            <label>Max HP<input type="text" name="system.attributes.hp.max" value="{{qmms.hp.max}}"/></label>
+            <fieldset>
+                <legend>HP</legend>
+                <label>Current HP</label><input type="text" name="system.attributes.hp.value" value="{{qmms.hp.value}}"/>
+                <label>Max HP</label><input type="text" name="system.attributes.hp.max" value="{{qmms.hp.max}}"/>
+            </fieldset>
             <div class="qmms__health__bar">
                 <div class="qmms__health__bar__fill"></div>
             </div>
