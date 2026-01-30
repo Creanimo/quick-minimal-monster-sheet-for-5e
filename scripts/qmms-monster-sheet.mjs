@@ -47,7 +47,7 @@ export function createQuickMinimalMonsterSheetClass({
                 submitOnChange: false,
                 closeOnSubmit: false
             },
-            position: {width: auto, height: auto}
+            position: {width: 600, height: 800}
         });
 
         async _prepareContext(options) {
