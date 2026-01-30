@@ -101,13 +101,30 @@ export function createQuickMinimalMonsterSheetClass({
             return context;
         }
 
+        /**
+         * @param {string} expr
+         */
+        evalAddSub(expr) {
+            expr = expr.trim();
+
+            if (/^[+-]?\d+(\.\d+)?$/.test(expr)) {
+                return String(expr);
+            }
+
+            // Match all numbers with their sign, e.g. "30-10+5" → ["30", "-10", "+5"]
+            const terms = expr.match(/[+-]?\d+(\.\d+)?/g);
+            if (!terms) throw new Error("Invalid expression: " + expr);
+
+            return String(terms.reduce((sum, term) => sum + Number(term), 0));
+        }
+
+
         _onRender(context, options) {
             super._onRender?.(context, options);
 
             const root = this.element;
             if (!root) return;
 
-            // Autosave numeric fields
             const autosaveSelector = [
                 'input[name="system.attributes.ac.value"]',
                 'input[name="system.attributes.hp.value"]',
@@ -115,8 +132,17 @@ export function createQuickMinimalMonsterSheetClass({
                 'input[name="system.details.cr"]'
             ].join(",");
 
-            root.querySelectorAll(autosaveSelector).forEach(el => {
-                el.addEventListener("change", () => this.submit());
+            root.querySelectorAll(autosaveSelector).forEach(input => {
+                input.addEventListener("change", (event) => {
+                    const rawValue = input.value;
+                    try {
+                        input.value = this.evalAddSub(rawValue);
+                    } catch (err) {
+                        console.warn(`${moduleId} | Invalid math expression: ${rawValue}`, err);
+                    }
+
+                    this.submit();
+                });
             });
 
             root.querySelector(".qmms__health__bar__fill").style.width = context.qmms.hp.percentage + "%";
