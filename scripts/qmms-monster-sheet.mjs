@@ -169,7 +169,7 @@ export function createQuickMinimalMonsterSheetClass({
 
             const bioEditor = root.querySelector('prose-mirror[name="system.details.biography.value"]');
             if (bioEditor) {
-                bioEditor.addEventListener("blur", () => this.submit({ preventClose: false, preventRender: false }));
+                bioEditor.addEventListener("blur", () => this.submit());
             }
 
             root.querySelector(".qmms__health__bar__fill").style.width = context.qmms.hp.percentage + "%";
