@@ -104,18 +104,6 @@ export function createQuickMinimalMonsterSheetClass({
             return context;
         }
 
-        // Add Prose-Mirror Field to formData
-        _getFormData(options) {
-            const fd = super._getFormData(options);
-
-            const biographyEl = this.element?.querySelector('prose-mirror[name="system.details.biography.value"]');
-            if (biographyEl?.proseMirrorEditor) {
-                fd.set("system.details.biography.value", biographyEl.proseMirrorEditor.getContent());
-            }
-
-            return fd;
-        }
-
         /**
          * @param {string} expr
          */
@@ -166,11 +154,6 @@ export function createQuickMinimalMonsterSheetClass({
                     this.submit();
                 });
             });
-
-            const bioEditor = root.querySelector('prose-mirror[name="system.details.biography.value"]');
-            if (bioEditor) {
-                bioEditor.addEventListener("blur", () => this.submit());
-            }
 
             root.querySelector(".qmms__health__bar__fill").style.width = context.qmms.hp.percentage + "%";
         }
