@@ -1,3 +1,5 @@
+import {transformInlineRollShorthands} from "./shorthand-processing.mjs";
+
 export function createQuickMinimalMonsterSheetClass({
                                                         moduleId = "quick-minimal-monster-sheet-for-5e",
                                                         templatePath = "modules/quick-minimal-monster-sheet-for-5e/templates/qmms-monster-sheet.hbs"
@@ -158,16 +160,15 @@ export function createQuickMinimalMonsterSheetClass({
                 });
             });
 
-            // Catch ProseMirror "save" event (fires on Save button)
             const pm = root.querySelector('prose-mirror[name="system.details.biography.value"]');
             const toggleBtn = root.querySelector('.qmms5e__freetext__edit-toggle');
-            if (pm) {
+
+            if (pm && toggleBtn) {
                 this._updateToggleButton(toggleBtn, pm.isOpen);
 
                 toggleBtn.addEventListener("click", () => {
                     pm.toggleAttribute("open");
                 });
-
 
                 ["open", "close"].forEach(eventType => {
                     pm.addEventListener(eventType, () => {
@@ -176,8 +177,18 @@ export function createQuickMinimalMonsterSheetClass({
                 });
 
                 pm.addEventListener("save", (event) => {
+                    try {
+                        const currentValue = pm.value ?? pm.getAttribute("value") ?? "";
+                        const transformed = transformInlineRollShorthands(currentValue);
+
+                        pm.value = transformed;
+                        pm.setAttribute("value", transformed);
+                    } catch (e) {
+                        console.warn(`${moduleId} | Error transforming inline roll shorthands`, e);
+                    }
+
                     this.submit({preventClose: true, preventRender: false});
-                }, {once: false});  // Reuse across re-renders
+                }, {once: false});
             }
 
             root.querySelector(".qmms5e__health__bar__fill").style.width = context.qmms5e.hp.percentage + "%";
