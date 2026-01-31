@@ -188,6 +188,11 @@ export function createQuickMinimalMonsterSheetClass({
             }
 
             root.querySelector(".qmms5e__health__bar__fill").style.width = context.qmms5e.hp.percentage + "%";
+
+            console.log(transformInlineRollShorthands("1d6+3"));                    // → "[[/roll 1d6+3]]"
+            console.log(transformInlineRollShorthands("+5"));                        // → "[[/roll 1d20+5]]"
+            console.log(transformInlineRollShorthands("Hit: 1d20 + 1"));             // → "Hit: [[/roll 1d20]] + 1"
+            console.log(transformInlineRollShorthands("[[/roll 1d6]] 2d8-1"));       // → "[[/roll 1d6]] [[/roll 2d8-1]]"
         }
     };
 }
