@@ -14,6 +14,13 @@ export function createQuickMinimalMonsterSheetClass({
     async function onSubmitForm(event, form, formData) {
         const data = formData?.object ?? formData;
 
+        // Transform biography field **here** before actor update
+        const biographyRaw = foundry.utils.getProperty(data, "system.details.biography.value");
+        if (biographyRaw !== undefined) {
+            const transformed = transformInlineRollShorthands(biographyRaw);
+            foundry.utils.setProperty(data, "system.details.biography.value", transformed);
+        }
+
         const updateData = {
             "name": foundry.utils.getProperty(data, "name"),
             "system.attributes.ac.value": foundry.utils.getProperty(data, "system.attributes.ac.value"),
@@ -177,16 +184,6 @@ export function createQuickMinimalMonsterSheetClass({
                 });
 
                 pm.addEventListener("save", (event) => {
-                    try {
-                        const currentValue = pm.value ?? pm.getAttribute("value") ?? "";
-                        const transformed = transformInlineRollShorthands(currentValue);
-
-                        pm.value = transformed;
-                        pm.setAttribute("value", transformed);
-                    } catch (e) {
-                        console.warn(`${moduleId} | Error transforming inline roll shorthands`, e);
-                    }
-
                     this.submit({preventClose: true, preventRender: false});
                 }, {once: false});
             }
