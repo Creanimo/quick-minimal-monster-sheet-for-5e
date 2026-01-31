@@ -158,8 +158,6 @@ export function createQuickMinimalMonsterSheetClass({
             const pm = root.querySelector('prose-mirror[name="system.details.biography.value"]');
             if (pm) {
                 pm.addEventListener("save", (event) => {
-                    console.log("ProseMirror saved!", pm.internals.value);
-                    // Trigger your autosave
                     this.submit({preventClose: true, preventRender: false});
                 }, {once: false});  // Reuse across re-renders
             }
