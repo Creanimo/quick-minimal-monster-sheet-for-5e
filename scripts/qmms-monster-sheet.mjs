@@ -14,10 +14,15 @@ export function createQuickMinimalMonsterSheetClass({
     async function onSubmitForm(event, form, formData) {
         const data = formData?.object ?? formData;
 
-        const biographyRaw = foundry.utils.getProperty(data, "system.details.biography.value");
-        if (biographyRaw !== undefined) {
+        const biographyRaw = data.get("system.details.biography.value") ??
+            foundry.utils.getProperty(data, "system.details.biography.value");
+
+        if (biographyRaw !== undefined && biographyRaw !== "") {
+            console.log("Transforming:", biographyRaw);
             const transformed = transformInlineRollShorthands(biographyRaw);
-            foundry.utils.setProperty(data, "system.details.biography.value", transformed);
+            console.log("→", transformed);
+
+            data.set("system.details.biography.value", transformed);
         }
 
         const updateData = {
