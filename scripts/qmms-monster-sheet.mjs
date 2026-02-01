@@ -18,7 +18,7 @@ export function createQuickMinimalMonsterSheetClass({
 
         if (biographyRaw !== undefined && biographyRaw !== "") {
             const transformed = transformInlineRollShorthands(biographyRaw);
-
+   
             if (transformed !== biographyRaw) {
                 foundry.utils.setProperty(data, "system.details.biography.value", transformed);
                 console.log(`✅ FormData updated:`, biographyRaw, '→', transformed);
@@ -34,13 +34,20 @@ export function createQuickMinimalMonsterSheetClass({
             "system.details.biography.value": foundry.utils.getProperty(data, "system.details.biography.value")
         };
 
+        // 🔍 DEBUG: What's actually being sent to actor?
+        console.log("📦 updateData.biography:", updateData["system.details.biography.value"]);
+
         for (const [k, v] of Object.entries(updateData)) {
             if (v === undefined) delete updateData[k];
         }
         if (!Object.keys(updateData).length) return;
 
         await this.document.update(updateData);
+
+        // 🔍 DEBUG: What's in actor after update?
+        console.log("💾 Actor biography after save:", this.document.system.details.biography.value);
     }
+
 
     const Base = HandlebarsApplicationMixin(ActorSheetV2);
 
