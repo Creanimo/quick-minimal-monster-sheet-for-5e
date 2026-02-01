@@ -1,13 +1,13 @@
-import { transformInlineRollShorthands } from "./utils/shorthand-processing.mjs";
-import { evalAddSubSafe } from "./utils/math-evaluator.mjs";
-import { enrichActorBiography } from "./utils/text-enricher.mjs";
-import { AdapterFactory } from "./adapters/adapter-factory.mjs";
+import {transformInlineRollShorthands} from "./utils/shorthand-processing.mjs";
+import {evalAddSubSafe} from "./utils/math-evaluator.mjs";
+import {enrichActorBiography} from "./utils/text-enricher.mjs";
+import {AdapterFactory} from "./adapters/adapter-factory.mjs";
 
 export function createQuickMinimalMonsterSheetClass({
-    moduleId = "quick-minimal-monster-sheet-for-5e",
-    templatePath = "modules/quick-minimal-monster-sheet-for-5e/templates/qmms-monster-sheet.hbs",
-    config = null
-} = {}) {
+                                                        moduleId = "quick-minimal-monster-sheet-for-5e",
+                                                        templatePath = "modules/quick-minimal-monster-sheet-for-5e/templates/qmms-monster-sheet.hbs",
+                                                        config = null
+                                                    } = {}) {
     const ActorSheetV2 = foundry?.applications?.sheets?.ActorSheetV2;
     const HandlebarsApplicationMixin = foundry?.applications?.api?.HandlebarsApplicationMixin;
 
@@ -20,12 +20,16 @@ export function createQuickMinimalMonsterSheetClass({
 
     async function onSubmitForm(event, form, formData) {
         const data = formData?.object ?? formData;
+        console.log("[QMMS] Raw form data:", data);
 
         // Create adapter for this actor
         const adapter = AdapterFactory.createAdapter(this.document, sheetConfig);
 
         // Get biography field path from config
         const biographyPath = sheetConfig.getBiographyFieldName();
+        console.log("[QMMS] Biography path:", biographyPath);
+        console.log("[QMMS] Biography value from form:", foundry.utils.getProperty(data, biographyPath));
+
         const biographyRaw = foundry.utils.getProperty(data, biographyPath);
 
         // Transform inline roll shorthands in biography
@@ -39,7 +43,7 @@ export function createQuickMinimalMonsterSheetClass({
                 } else {
                     foundry.utils.setProperty(data, biographyPath, transformed);
                 }
-                console.log(`✅ Inline rolls transformed in biography`);
+                console.log(`[QMMS] ✅ Inline rolls transformed in biography`);
             }
         }
 
@@ -53,6 +57,7 @@ export function createQuickMinimalMonsterSheetClass({
 
         // Use adapter to prepare update data
         const updateData = adapter.prepareUpdateData(data);
+        console.log("[QMMS] Prepared update data:", updateData);
 
         // Don't update if no data
         if (!Object.keys(updateData).length) return;
@@ -93,11 +98,16 @@ export function createQuickMinimalMonsterSheetClass({
 
         async _prepareContext(options) {
             const context = await super._prepareContext(options);
-
             const actor = this.document;
 
-            // Create adapter for this actor
             const adapter = AdapterFactory.createAdapter(actor, sheetConfig);
+            console.log("[QMMS] Adapter paths:", adapter.paths);
+            console.log("[QMMS] Actor system data:", actor.system);
+            console.log("[QMMS} Adapter reads:", {
+                defense: adapter.getDefenseValue(),
+                hpValue: adapter.getHealthValue(),
+                hpMax: adapter.getHealthMax()
+            });
 
             // Get data through adapter
             const biography = adapter.getBiography();
@@ -192,12 +202,12 @@ export function createQuickMinimalMonsterSheetClass({
                     ["open", "close"].forEach(eventType => {
                         pm.addEventListener(eventType, () => {
                             this._updateToggleButton(toggleBtn, pm.isOpen);
-                        }, { once: false });
+                        }, {once: false});
                     });
 
                     pm.addEventListener("save", (event) => {
-                        this.submit({ preventClose: true, preventRender: false });
-                    }, { once: false });
+                        this.submit({preventClose: true, preventRender: false});
+                    }, {once: false});
                 }
             }
 
