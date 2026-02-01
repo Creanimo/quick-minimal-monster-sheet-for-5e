@@ -44,16 +44,17 @@ export function transformPlainSegment(segment) {
 
     let result = segment;
 
-    const shortPattern = /(?<![\w\]])([+-])(\d+)(?!\w)/g;
-    result = result.replace(shortPattern, (match, sign, num) => {
-        return `[[/roll 1d20${sign}${num}]]`;
-    });
-
     const dicePattern = /(?<!\w)(\d*)d(\d+)([+-]\d+)?(?!\w)/g;
     result = result.replace(dicePattern, (match, nStr, faces, opMod) => {
         const n = nStr || "1";
         const formula = opMod ? `${n}d${faces}${opMod}` : `${n}d${faces}`;
         return `[[/roll ${formula}]]`;
+    });
+
+    // Negative lookbehind: not after `d\d+` (dice faces) or word char or ]
+    const shortPattern = /(?<!d\d)(?<![\w\]])([+-])(\d+)(?!\w)/g;
+    result = result.replace(shortPattern, (match, sign, num) => {
+        return `[[/roll 1d20${sign}${num}]]`;
     });
 
     return result;
