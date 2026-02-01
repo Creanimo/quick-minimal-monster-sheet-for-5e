@@ -100,9 +100,6 @@ export function createQuickMinimalMonsterSheetClass({
 
             console.log("[QMMS] 🔍 Raw form data:", data);
 
-            // Create adapter for this actor
-            const adapter = AdapterFactory.createAdapter(this.document, sheetConfig);
-
             // Get biography field path from config
             const biographyPath = sheetConfig.getBiographyFieldName();
             const biographyRaw = foundry.utils.getProperty(data, biographyPath);
@@ -114,10 +111,17 @@ export function createQuickMinimalMonsterSheetClass({
                 const transformed = transformInlineRollShorthands(biographyRaw);
 
                 if (transformed !== biographyRaw) {
-                    foundry.utils.setProperty(data, biographyPath, transformed);
-                    console.log("[QMMS] ✅ Inline rolls transformed");
+                    if (data[biographyPath] !== undefined) {
+                        data[biographyPath] = transformed;
+                    } else if (data.system?.details?.biography) {
+                        data.system.details.biography.value = transformed;
+                    }
+                    console.log("[QMMS] ✅ Inline rolls transformed:", biographyRaw, '→', transformed);
                 }
             }
+
+            // Create adapter for this actor
+            const adapter = AdapterFactory.createAdapter(this.document, sheetConfig);
 
             // Validate data before submission
             const validation = adapter.validateFormData(data);
@@ -129,7 +133,6 @@ export function createQuickMinimalMonsterSheetClass({
                 return;
             }
 
-            // Use adapter to prepare update data
             const updateData = adapter.prepareUpdateData(data);
 
             console.log("[QMMS] 🔍 Prepared update data:", updateData);

@@ -1,4 +1,4 @@
-import { BaseAdapter } from './base-adapter.mjs';
+import {BaseAdapter} from './base-adapter.mjs';
 
 export class Dnd5eAdapter extends BaseAdapter {
     // ==================== SEMANTIC READ METHODS ====================
@@ -25,9 +25,7 @@ export class Dnd5eAdapter extends BaseAdapter {
 
     // ==================== WRITE METHODS ====================
 
-    prepareUpdateData(formData) {
-        const data = formData?.object ?? formData;
-
+    prepareUpdateData(data) {
         const updateData = {
             [this.paths.name]: foundry.utils.getProperty(data, "name"),
             [this.paths.defense]: foundry.utils.getProperty(data, this.paths.defense),
