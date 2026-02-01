@@ -3,6 +3,13 @@ import {evalAddSubSafe} from "./utils/math-evaluator.mjs";
 import {enrichActorBiography} from "./utils/text-enricher.mjs";
 import {AdapterFactory} from "./adapters/adapter-factory.mjs";
 import {QMMSFormProcessor} from "./core/qmms-form-processor.mjs";
+import {
+    UIHandlerManager,
+    AutoSaveHandler,
+    MathInputHandler,
+    EditorHandler,
+    HealthBarHandler
+} from "./ui/index.mjs";
 
 export function createQuickMinimalMonsterSheetClass({
                                                         moduleId = "quick-minimal-monster-sheet-for-5e",
@@ -19,6 +26,12 @@ export function createQuickMinimalMonsterSheetClass({
     // Store config for use in class
     const sheetConfig = config;
 
+    // Create UI handler manager
+    const uiManager = new UIHandlerManager();
+    uiManager.register(new AutoSaveHandler(sheetConfig));
+    uiManager.register(new MathInputHandler(sheetConfig));
+    uiManager.register(new EditorHandler(sheetConfig));
+    uiManager.register(new HealthBarHandler(sheetConfig));
 
     const Base = HandlebarsApplicationMixin(ActorSheetV2);
 
@@ -37,14 +50,26 @@ export function createQuickMinimalMonsterSheetClass({
                 sheetConfig.getApplicationOptions(),
                 {
                     form: {
-                        handler: QuickMinimalMonsterSheet.prototype._onSubmitForm  // ← Reference method
+                        handler: QuickMinimalMonsterSheet.prototype._onSubmitForm
                     }
                 }
             )
         );
 
-        _updateToggleButton(btn, isOpen) {
-            btn.classList.toggle("toggled", isOpen);
+        constructor(options) {
+            super(options);
+
+            // Re-render on actor updates
+            Hooks.on("updateActor", (actor, changes, options, userId) => {
+                if (actor === this.document && this.rendered) {
+                    this.render(false);
+                }
+            });
+        }
+
+        async close(options) {
+            uiManager.detachAll();
+            return super.close(options);
         }
 
         async _prepareContext(options) {
@@ -111,91 +136,9 @@ export function createQuickMinimalMonsterSheetClass({
             const root = this.element;
             if (!root) return;
 
-            // Auto-save fields (simple fields without math)
-            const autosaveFields = sheetConfig.getAutoSaveFields();
-            const autosaveSelector = autosaveFields.join(",");
-
-            if (autosaveSelector) {
-                root.querySelectorAll(autosaveSelector).forEach(input => {
-                    input.addEventListener("change", () => this.submit());
-                    input.addEventListener("blur", () => this.submit());
-                });
-            }
-
-            // Math-enabled fields (fields that support math expressions)
-            const mathFields = sheetConfig.getMathEnabledFields();
-            const mathFieldSelector = mathFields.join(",");
-
-            console.log("[QMMS] 🔍 Math field selector:", mathFieldSelector);
-
-            if (mathFieldSelector) {
-                const foundFields = root.querySelectorAll(mathFieldSelector);
-                console.log("[QMMS] 🔍 Found math-enabled fields:", foundFields.length);
-
-                foundFields.forEach(input => {
-                    console.log("[QMMS] 🔍 Attaching listeners to:", input.getAttribute('name'));
-
-                    // Store original value on focus
-                    input.addEventListener("focus", () => {
-                        input.dataset.originalValue = input.value;
-                        console.log("[QMMS] 📝 Focused field, stored value:", input.value);
-                    });
-
-                    input.addEventListener("change", (event) => {
-                        console.log("[QMMS] 🔄 Change event fired!");
-                        const rawValue = input.value.trim();
-                        const originalValue = input.dataset.originalValue || rawValue;
-
-                        console.log("[QMMS] 🔍 Raw value:", rawValue);
-                        console.log("[QMMS] 🔍 Original value:", originalValue);
-
-                        // Try to evaluate math expression
-                        const result = evalAddSubSafe(rawValue, originalValue);
-
-                        console.log("[QMMS] 🔍 Evaluated result:", result);
-
-                        // Update input value
-                        input.value = result;
-
-                        // Remove any error styling
-                        input.classList.remove("invalid");
-
-                        console.log("[QMMS] 📤 Submitting form...");
-                        this.submit();
-                    });
-                });
-            }
-
-            // Biography editor (ProseMirror) handling
-            if (sheetConfig.hasBiographyEditor()) {
-                const biographyFieldName = sheetConfig.getBiographyFieldName();
-                const pm = root.querySelector(`prose-mirror[name="${biographyFieldName}"]`);
-                const toggleBtn = root.querySelector('.qmms5e__freetext__edit-toggle');
-
-                if (pm && toggleBtn) {
-                    this._updateToggleButton(toggleBtn, pm.isOpen);
-
-                    toggleBtn.addEventListener("click", () => {
-                        pm.toggleAttribute("open");
-                    });
-
-                    ["open", "close"].forEach(eventType => {
-                        pm.addEventListener(eventType, () => {
-                            this._updateToggleButton(toggleBtn, pm.isOpen);
-                        }, {once: false});
-                    });
-
-                    pm.addEventListener("save", (event) => {
-                        this.submit({preventClose: true, preventRender: false});
-                    }, {once: false});
-                }
-            }
-
-            // Update health bar visual
-            const healthBar = root.querySelector(".qmms5e__health__bar__fill");
-            if (healthBar) {
-                healthBar.style.width = context.qmms5e.hp.percentage + "%";
-            }
+            // Attach all UI handlers
+            uiManager.attachAll(root, context, this);
         }
+
     };
 }
