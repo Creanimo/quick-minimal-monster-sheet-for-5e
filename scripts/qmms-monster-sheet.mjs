@@ -13,12 +13,14 @@ export function createQuickMinimalMonsterSheetClass({
 
     async function onSubmitForm(event, form, formData) {
         const pm = form?.querySelector('prose-mirror[name="system.details.biography.value"]');
-        if (pm?.value) {
-            const raw = pm.value.trim();
-            if (raw) {
-                const transformed = transformInlineRollShorthands(raw);
-                pm.value = transformed;  // Writes back to PM internals
-                console.log(`${moduleId} | PM transformed:`, raw, '→', transformed);
+        if (pm) {
+            const proseDiv = pm.querySelector('.ProseMirror');
+            const rawPlainText = proseDiv?.textContent?.trim() || '';
+
+            if (rawPlainText) {
+                const transformedPlain = transformInlineRollShorthands(rawPlainText);
+                pm.value = transformedPlain;
+                console.log('✅ Saved:', transformedPlain);
             }
         }
 
