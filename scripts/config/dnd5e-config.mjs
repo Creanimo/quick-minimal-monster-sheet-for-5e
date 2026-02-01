@@ -1,8 +1,5 @@
-import { QMMSBaseConfig } from './base-config.mjs';
+import {QMMSBaseConfig} from './base-config.mjs';
 
-/**
- * Configuration specific to D&D 5e system
- */
 export class QMMSDnd5eConfig extends QMMSBaseConfig {
     constructor(options = {}) {
         super({
@@ -47,17 +44,28 @@ export class QMMSDnd5eConfig extends QMMSBaseConfig {
         return "Quick Minimal Monster Sheet for 5e";
     }
 
+    getDefenseLabel() {
+        return "AC";
+    }
+
+    getDifficultyLabel() {
+        return "CR";
+    }
+
+    getHealthLabel() {
+        return "HP";
+    }
+
     /**
-     * Data field paths for D&D 5e
-     * These define where to find data in the actor's system object
+     * Semantic field paths mapped to D&D 5e V13 structure
      */
     getFieldPaths() {
         return {
             name: "name",
-            ac: "system.attributes.ac.value",
-            hpValue: "system.attributes.hp.value",
-            hpMax: "system.attributes.hp.max",
-            cr: "system.details.cr",
+            defense: "system.attributes.ac.value",
+            healthValue: "system.attributes.hp.value",
+            healthMax: "system.attributes.hp.max",
+            difficulty: "system.details.cr",
             biography: "system.details.biography.value"
         };
     }
