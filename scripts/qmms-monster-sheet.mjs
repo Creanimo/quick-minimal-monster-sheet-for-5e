@@ -1,57 +1,64 @@
-import {transformInlineRollShorthands} from "./shorthand-processing.mjs";
+import { transformInlineRollShorthands } from "./utils/shorthand-processing.mjs";
+import { evalAddSubSafe } from "./utils/math-evaluator.mjs";
+import { enrichActorBiography } from "./utils/text-enricher.mjs";
+import { AdapterFactory } from "./adapters/adapter-factory.mjs";
 
 export function createQuickMinimalMonsterSheetClass({
-                                                        moduleId = "quick-minimal-monster-sheet-for-5e",
-                                                        templatePath = "modules/quick-minimal-monster-sheet-for-5e/templates/qmms-monster-sheet.hbs"
-                                                    } = {}) {
+    moduleId = "quick-minimal-monster-sheet-for-5e",
+    templatePath = "modules/quick-minimal-monster-sheet-for-5e/templates/qmms-monster-sheet.hbs",
+    config = null
+} = {}) {
     const ActorSheetV2 = foundry?.applications?.sheets?.ActorSheetV2;
     const HandlebarsApplicationMixin = foundry?.applications?.api?.HandlebarsApplicationMixin;
 
     if (!ActorSheetV2) throw new Error(`${moduleId} | ActorSheetV2 not available. Create the class after Hooks.once("ready").`);
     if (!HandlebarsApplicationMixin) throw new Error(`${moduleId} | HandlebarsApplicationMixin not available. Create the class after Hooks.once("ready").`);
+    if (!config) throw new Error(`${moduleId} | config is required`);
 
+    // Store config for use in class
+    const sheetConfig = config;
 
     async function onSubmitForm(event, form, formData) {
         const data = formData?.object ?? formData;
 
-        const biographyRaw = foundry.utils.getProperty(data, "system.details.biography.value");
+        // Create adapter for this actor
+        const adapter = AdapterFactory.createAdapter(this.document, sheetConfig);
 
+        // Get biography field path from config
+        const biographyPath = sheetConfig.getBiographyFieldName();
+        const biographyRaw = foundry.utils.getProperty(data, biographyPath);
+
+        // Transform inline roll shorthands in biography
         if (biographyRaw !== undefined && biographyRaw !== "") {
             const transformed = transformInlineRollShorthands(biographyRaw);
 
             if (transformed !== biographyRaw) {
-                if (data["system.details.biography.value"] !== undefined) {
-                    data["system.details.biography.value"] = transformed;
-                } else if (data.system?.details?.biography) {
-                    data.system.details.biography.value = transformed;
+                // Update the form data with transformed biography
+                if (data[biographyPath] !== undefined) {
+                    data[biographyPath] = transformed;
+                } else {
+                    foundry.utils.setProperty(data, biographyPath, transformed);
                 }
-                console.log(`✅ FormData updated:`, biographyRaw, '→', transformed);
+                console.log(`✅ Inline rolls transformed in biography`);
             }
         }
 
-        const updateData = {
-            "name": foundry.utils.getProperty(data, "name"),
-            "system.attributes.ac.value": foundry.utils.getProperty(data, "system.attributes.ac.value"),
-            "system.attributes.hp.value": foundry.utils.getProperty(data, "system.attributes.hp.value"),
-            "system.attributes.hp.max": foundry.utils.getProperty(data, "system.attributes.hp.max"),
-            "system.details.cr": foundry.utils.getProperty(data, "system.details.cr"),
-            "system.details.biography.value": foundry.utils.getProperty(data, "system.details.biography.value")
-        };
-
-        // 🔍 DEBUG: What's actually being sent to actor?
-        console.log("📦 updateData.biography:", updateData["system.details.biography.value"]);
-
-        for (const [k, v] of Object.entries(updateData)) {
-            if (v === undefined) delete updateData[k];
+        // Validate data before submission
+        const validation = adapter.validateFormData(data);
+        if (!validation.valid) {
+            console.error(`${moduleId} | Form validation failed:`, validation.errors);
+            ui.notifications?.error(`Invalid data: ${validation.errors.join(", ")}`);
+            return;
         }
+
+        // Use adapter to prepare update data
+        const updateData = adapter.prepareUpdateData(data);
+
+        // Don't update if no data
         if (!Object.keys(updateData).length) return;
 
         await this.document.update(updateData);
-
-        // 🔍 DEBUG: What's in actor after update?
-        console.log("💾 Actor biography after save:", this.document.system.details.biography.value);
     }
-
 
     const Base = HandlebarsApplicationMixin(ActorSheetV2);
 
@@ -64,26 +71,18 @@ export function createQuickMinimalMonsterSheetClass({
             }
         };
 
-        static DEFAULT_OPTIONS = foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
-            id: `${moduleId}-sheet`,
-            classes: ["sheet", "actor", "qmms5e"],
-            tag: "form",
-            form: {
-                handler: onSubmitForm,
-                submitOnChange: false,
-                closeOnSubmit: false
-            },
-            position: {width: 600, height: 800}
-        });
+        static DEFAULT_OPTIONS = foundry.utils.mergeObject(
+            super.DEFAULT_OPTIONS,
+            sheetConfig.getApplicationOptions()
+        );
 
         constructor(options) {
             super(options);
 
-            // ✅ Force re-render on actor updates
+            // Re-render on actor updates
             Hooks.on("updateActor", (actor, changes, options, userId) => {
                 if (actor === this.document && this.rendered) {
-                    console.log("🔔 Actor updated, re-rendering", changes);
-                    this.render(false);  // Re-render without forcing position change
+                    this.render(false);
                 }
             });
         }
@@ -96,67 +95,39 @@ export function createQuickMinimalMonsterSheetClass({
             const context = await super._prepareContext(options);
 
             const actor = this.document;
-            const system = actor.system ?? {};
 
-            const actorName = foundry.utils.getProperty(actor, "name");
+            // Create adapter for this actor
+            const adapter = AdapterFactory.createAdapter(actor, sheetConfig);
 
-            const biography =
-                foundry.utils.getProperty(system, "details.biography.value") ??
-                foundry.utils.getProperty(system, "details.biography") ??
-                "";
+            // Get data through adapter
+            const biography = adapter.getBiography();
 
-            const TextEditorImpl = foundry.applications.ux.TextEditor.implementation;
-
+            // Enrich biography using utility
             let biographyEnriched = biography;
             try {
-                biographyEnriched = await TextEditorImpl.enrichHTML(biography ?? "", {
-                    async: true,
-                    documents: true,
-                    links: true,
-                    rolls: true,
-                    rollData: typeof actor.getRollData === "function" ? actor.getRollData() : actor.system
-                });
+                biographyEnriched = await enrichActorBiography(actor, biography);
             } catch (err) {
                 console.warn(`${moduleId} | Biography enrichment failed`, err);
             }
 
-            const currentHp = foundry.utils.getProperty(system, "attributes.hp.value") ?? 0;
-            const maxHp = foundry.utils.getProperty(system, "attributes.hp.max") ?? 1;
-            const percentageHP = Math.max(
-                0,
-                Math.min(100, (currentHp / maxHp) * 100)
-            );
+            // Use adapter's prepareSheetContext for structured data
+            const sheetData = await adapter.prepareSheetContext();
 
+            // Build context with semantic naming
             context.qmms5e = {
-                name: actorName,
-                ac: foundry.utils.getProperty(system, "attributes.ac.value") ?? 0,
-                hp: {
-                    value: currentHp,
-                    max: maxHp,
-                    percentage: percentageHP,
-                },
-                cr: foundry.utils.getProperty(system, "details.cr") ?? "",
+                name: sheetData.name,
+                defense: sheetData.defense,
+                health: sheetData.health,
+                difficulty: sheetData.difficulty,
                 biography,
-                biographyEnriched
+                biographyEnriched,
+                // Legacy compatibility (can remove once template is updated)
+                ac: sheetData.defense.value,
+                hp: sheetData.health,
+                cr: sheetData.difficulty.value
             };
 
             return context;
-        }
-
-        /**
-         * @param {string} expr
-         */
-        evalAddSub(expr) {
-            expr = expr.trim();
-
-            if (/^[+-]?\d+(\.\d+)?$/.test(expr)) {
-                return Number(expr);
-            }
-
-            const terms = expr.match(/[+-]?\d+(\.\d+)?/g);
-            if (!terms) throw new Error("Invalid expression: " + expr);
-
-            return terms.reduce((sum, term) => sum + Number(term), 0);
         }
 
         _onRender(context, options) {
@@ -165,62 +136,76 @@ export function createQuickMinimalMonsterSheetClass({
             const root = this.element;
             if (!root) return;
 
-            const autosaveSelector = [
-                'input[name="name"]',
-            ].join(",");
+            // Auto-save fields (simple fields without math)
+            const autosaveFields = sheetConfig.getAutoSaveFields();
+            const autosaveSelector = autosaveFields.join(",");
 
-            root.querySelectorAll(autosaveSelector).forEach(input => {
-                input.addEventListener("change", () => this.submit());
-                input.addEventListener("blur", () => this.submit());
-            });
-
-            const autosaveWithMathSelector = [
-                'input[name="system.attributes.ac.value"]',
-                'input[name="system.attributes.hp.value"]',
-                'input[name="system.attributes.hp.max"]',
-                'input[name="system.details.cr"]'
-            ].join(",");
-
-            root.querySelectorAll(autosaveWithMathSelector).forEach(input => {
-                input.addEventListener("change", (event) => {
-                    const rawValue = input.value;
-                    try {
-                        input.value = this.evalAddSub(rawValue);
-                    } catch (err) {
-                        console.warn(`${moduleId} | Invalid math expression: ${rawValue}`, err);
-                    }
-
-                    this.submit();
+            if (autosaveSelector) {
+                root.querySelectorAll(autosaveSelector).forEach(input => {
+                    input.addEventListener("change", () => this.submit());
+                    input.addEventListener("blur", () => this.submit());
                 });
-            });
-
-            const pm = root.querySelector('prose-mirror[name="system.details.biography.value"]');
-            const toggleBtn = root.querySelector('.qmms5e__freetext__edit-toggle');
-
-            if (pm && toggleBtn) {
-                this._updateToggleButton(toggleBtn, pm.isOpen);
-
-                toggleBtn.addEventListener("click", () => {
-                    pm.toggleAttribute("open");
-                });
-
-                ["open", "close"].forEach(eventType => {
-                    pm.addEventListener(eventType, () => {
-                        this._updateToggleButton(toggleBtn, pm.isOpen);
-                    }, {once: false});
-                });
-
-                pm.addEventListener("save", (event) => {
-                    this.submit({preventClose: true, preventRender: false});
-                }, {once: false});
             }
 
-            root.querySelector(".qmms5e__health__bar__fill").style.width = context.qmms5e.hp.percentage + "%";
+            // Math-enabled fields (fields that support math expressions)
+            const mathFields = sheetConfig.getMathEnabledFields();
+            const mathFieldSelector = mathFields.join(",");
 
-            console.log(transformInlineRollShorthands("1d6+3"));                    // → "[[/roll 1d6+3]]"
-            console.log(transformInlineRollShorthands("+5"));                        // → "[[/roll 1d20+5]]"
-            console.log(transformInlineRollShorthands("Hit: 1d20 + 1"));             // → "Hit: [[/roll 1d20]] + 1"
-            console.log(transformInlineRollShorthands("[[/roll 1d6]] 2d8-1"));       // → "[[/roll 1d6]] [[/roll 2d8-1]]"
+            if (mathFieldSelector) {
+                root.querySelectorAll(mathFieldSelector).forEach(input => {
+                    // Store original value on focus
+                    input.addEventListener("focus", () => {
+                        input.dataset.originalValue = input.value;
+                    });
+
+                    input.addEventListener("change", (event) => {
+                        const rawValue = input.value.trim();
+                        const originalValue = input.dataset.originalValue || rawValue;
+
+                        // Try to evaluate math expression
+                        const result = evalAddSubSafe(rawValue, originalValue);
+
+                        // Update input value
+                        input.value = result;
+
+                        // Remove any error styling
+                        input.classList.remove("invalid");
+
+                        this.submit();
+                    });
+                });
+            }
+
+            // Biography editor (ProseMirror) handling
+            if (sheetConfig.hasBiographyEditor()) {
+                const biographyFieldName = sheetConfig.getBiographyFieldName();
+                const pm = root.querySelector(`prose-mirror[name="${biographyFieldName}"]`);
+                const toggleBtn = root.querySelector('.qmms5e__freetext__edit-toggle');
+
+                if (pm && toggleBtn) {
+                    this._updateToggleButton(toggleBtn, pm.isOpen);
+
+                    toggleBtn.addEventListener("click", () => {
+                        pm.toggleAttribute("open");
+                    });
+
+                    ["open", "close"].forEach(eventType => {
+                        pm.addEventListener(eventType, () => {
+                            this._updateToggleButton(toggleBtn, pm.isOpen);
+                        }, { once: false });
+                    });
+
+                    pm.addEventListener("save", (event) => {
+                        this.submit({ preventClose: true, preventRender: false });
+                    }, { once: false });
+                }
+            }
+
+            // Update health bar visual
+            const healthBar = root.querySelector(".qmms5e__health__bar__fill");
+            if (healthBar) {
+                healthBar.style.width = context.qmms5e.hp.percentage + "%";
+            }
         }
     };
 }
