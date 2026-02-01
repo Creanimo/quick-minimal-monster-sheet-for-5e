@@ -18,65 +18,6 @@ export function createQuickMinimalMonsterSheetClass({
     // Store config for use in class
     const sheetConfig = config;
 
-    async function onSubmitForm(event, form, formData) {
-        console.log("[QMMS] 📝 Form submitted!");
-
-        const data = formData?.object ?? formData;
-
-        console.log("[QMMS] 🔍 Raw form data:", data);
-        console.log("[QMMS] 🔍 FormData type:", typeof formData, formData.constructor.name);
-
-        // Create adapter for this actor
-        const adapter = AdapterFactory.createAdapter(this.document, sheetConfig);
-
-        // Get biography field path from config
-        const biographyPath = sheetConfig.getBiographyFieldName();
-        const biographyRaw = foundry.utils.getProperty(data, biographyPath);
-
-        console.log("[QMMS] 🔍 Biography path:", biographyPath);
-        console.log("[QMMS] 🔍 Biography raw value:", biographyRaw);
-
-        // Transform inline roll shorthands in biography
-        if (biographyRaw !== undefined && biographyRaw !== "") {
-            const transformed = transformInlineRollShorthands(biographyRaw);
-
-            if (transformed !== biographyRaw) {
-                // Update the form data with transformed biography
-                if (data[biographyPath] !== undefined) {
-                    data[biographyPath] = transformed;
-                } else {
-                    foundry.utils.setProperty(data, biographyPath, transformed);
-                }
-                console.log("[QMMS] ✅ Inline rolls transformed in biography");
-            }
-        }
-
-        // Validate data before submission
-        const validation = adapter.validateFormData(data);
-        console.log("[QMMS] 🔍 Validation result:", validation);
-
-        if (!validation.valid) {
-            console.error(`${moduleId} | Form validation failed:`, validation.errors);
-            ui.notifications?.error(`Invalid data: ${validation.errors.join(", ")}`);
-            return;
-        }
-
-        // Use adapter to prepare update data
-        const updateData = adapter.prepareUpdateData(data);
-
-        console.log("[QMMS] 🔍 Prepared update data:", updateData);
-        console.log("[QMMS] 🔍 Update data keys:", Object.keys(updateData));
-
-        // Don't update if no data
-        if (!Object.keys(updateData).length) {
-            console.log("[QMMS] ⚠️ No update data, skipping");
-            return;
-        }
-
-        console.log("[QMMS] 📤 Calling actor.update with:", updateData);
-        await this.document.update(updateData);
-        console.log("[QMMS] ✅ Actor updated successfully");
-    }
 
     const Base = HandlebarsApplicationMixin(ActorSheetV2);
 
@@ -91,19 +32,15 @@ export function createQuickMinimalMonsterSheetClass({
 
         static DEFAULT_OPTIONS = foundry.utils.mergeObject(
             super.DEFAULT_OPTIONS,
-            sheetConfig.getApplicationOptions()
-        );
-
-        constructor(options) {
-            super(options);
-
-            // Re-render on actor updates
-            Hooks.on("updateActor", (actor, changes, options, userId) => {
-                if (actor === this.document && this.rendered) {
-                    this.render(false);
+            foundry.utils.mergeObject(
+                sheetConfig.getApplicationOptions(),
+                {
+                    form: {
+                        handler: QuickMinimalMonsterSheet.prototype._onSubmitForm  // ← Reference method
+                    }
                 }
-            });
-        }
+            )
+        );
 
         _updateToggleButton(btn, isOpen) {
             btn.classList.toggle("toggled", isOpen);
@@ -151,6 +88,61 @@ export function createQuickMinimalMonsterSheetClass({
             };
 
             return context;
+        }
+
+        /**
+         * Custom form submission handler
+         */
+        async _onSubmitForm(event, form, formData) {
+            console.log("[QMMS] 📝 Form submitted!");
+
+            const data = formData?.object ?? formData;
+
+            console.log("[QMMS] 🔍 Raw form data:", data);
+
+            // Create adapter for this actor
+            const adapter = AdapterFactory.createAdapter(this.document, sheetConfig);
+
+            // Get biography field path from config
+            const biographyPath = sheetConfig.getBiographyFieldName();
+            const biographyRaw = foundry.utils.getProperty(data, biographyPath);
+
+            console.log("[QMMS] 🔍 Biography raw value:", biographyRaw);
+
+            // Transform inline roll shorthands in biography
+            if (biographyRaw !== undefined && biographyRaw !== "") {
+                const transformed = transformInlineRollShorthands(biographyRaw);
+
+                if (transformed !== biographyRaw) {
+                    foundry.utils.setProperty(data, biographyPath, transformed);
+                    console.log("[QMMS] ✅ Inline rolls transformed");
+                }
+            }
+
+            // Validate data before submission
+            const validation = adapter.validateFormData(data);
+            console.log("[QMMS] 🔍 Validation result:", validation);
+
+            if (!validation.valid) {
+                console.error(`Form validation failed:`, validation.errors);
+                ui.notifications?.error(`Invalid data: ${validation.errors.join(", ")}`);
+                return;
+            }
+
+            // Use adapter to prepare update data
+            const updateData = adapter.prepareUpdateData(data);
+
+            console.log("[QMMS] 🔍 Prepared update data:", updateData);
+
+            // Don't update if no data
+            if (!Object.keys(updateData).length) {
+                console.log("[QMMS] ⚠️ No update data, skipping");
+                return;
+            }
+
+            console.log("[QMMS] 📤 Calling actor.update");
+            await this.document.update(updateData);
+            console.log("[QMMS] ✅ Actor updated");
         }
 
         _onRender(context, options) {
