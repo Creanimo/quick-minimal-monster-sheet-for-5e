@@ -19,18 +19,22 @@ export function createQuickMinimalMonsterSheetClass({
     const sheetConfig = config;
 
     async function onSubmitForm(event, form, formData) {
+        console.log("[QMMS] 📝 Form submitted!");
+
         const data = formData?.object ?? formData;
-        console.log("[QMMS] Raw form data:", data);
+
+        console.log("[QMMS] 🔍 Raw form data:", data);
+        console.log("[QMMS] 🔍 FormData type:", typeof formData, formData.constructor.name);
 
         // Create adapter for this actor
         const adapter = AdapterFactory.createAdapter(this.document, sheetConfig);
 
         // Get biography field path from config
         const biographyPath = sheetConfig.getBiographyFieldName();
-        console.log("[QMMS] Biography path:", biographyPath);
-        console.log("[QMMS] Biography value from form:", foundry.utils.getProperty(data, biographyPath));
-
         const biographyRaw = foundry.utils.getProperty(data, biographyPath);
+
+        console.log("[QMMS] 🔍 Biography path:", biographyPath);
+        console.log("[QMMS] 🔍 Biography raw value:", biographyRaw);
 
         // Transform inline roll shorthands in biography
         if (biographyRaw !== undefined && biographyRaw !== "") {
@@ -43,12 +47,14 @@ export function createQuickMinimalMonsterSheetClass({
                 } else {
                     foundry.utils.setProperty(data, biographyPath, transformed);
                 }
-                console.log(`[QMMS] ✅ Inline rolls transformed in biography`);
+                console.log("[QMMS] ✅ Inline rolls transformed in biography");
             }
         }
 
         // Validate data before submission
         const validation = adapter.validateFormData(data);
+        console.log("[QMMS] 🔍 Validation result:", validation);
+
         if (!validation.valid) {
             console.error(`${moduleId} | Form validation failed:`, validation.errors);
             ui.notifications?.error(`Invalid data: ${validation.errors.join(", ")}`);
@@ -57,12 +63,19 @@ export function createQuickMinimalMonsterSheetClass({
 
         // Use adapter to prepare update data
         const updateData = adapter.prepareUpdateData(data);
-        console.log("[QMMS] Prepared update data:", updateData);
+
+        console.log("[QMMS] 🔍 Prepared update data:", updateData);
+        console.log("[QMMS] 🔍 Update data keys:", Object.keys(updateData));
 
         // Don't update if no data
-        if (!Object.keys(updateData).length) return;
+        if (!Object.keys(updateData).length) {
+            console.log("[QMMS] ⚠️ No update data, skipping");
+            return;
+        }
 
+        console.log("[QMMS] 📤 Calling actor.update with:", updateData);
         await this.document.update(updateData);
+        console.log("[QMMS] ✅ Actor updated successfully");
     }
 
     const Base = HandlebarsApplicationMixin(ActorSheetV2);
@@ -161,19 +174,33 @@ export function createQuickMinimalMonsterSheetClass({
             const mathFields = sheetConfig.getMathEnabledFields();
             const mathFieldSelector = mathFields.join(",");
 
+            console.log("[QMMS] 🔍 Math field selector:", mathFieldSelector);
+
             if (mathFieldSelector) {
-                root.querySelectorAll(mathFieldSelector).forEach(input => {
+                const foundFields = root.querySelectorAll(mathFieldSelector);
+                console.log("[QMMS] 🔍 Found math-enabled fields:", foundFields.length);
+
+                foundFields.forEach(input => {
+                    console.log("[QMMS] 🔍 Attaching listeners to:", input.getAttribute('name'));
+
                     // Store original value on focus
                     input.addEventListener("focus", () => {
                         input.dataset.originalValue = input.value;
+                        console.log("[QMMS] 📝 Focused field, stored value:", input.value);
                     });
 
                     input.addEventListener("change", (event) => {
+                        console.log("[QMMS] 🔄 Change event fired!");
                         const rawValue = input.value.trim();
                         const originalValue = input.dataset.originalValue || rawValue;
 
+                        console.log("[QMMS] 🔍 Raw value:", rawValue);
+                        console.log("[QMMS] 🔍 Original value:", originalValue);
+
                         // Try to evaluate math expression
                         const result = evalAddSubSafe(rawValue, originalValue);
+
+                        console.log("[QMMS] 🔍 Evaluated result:", result);
 
                         // Update input value
                         input.value = result;
@@ -181,6 +208,7 @@ export function createQuickMinimalMonsterSheetClass({
                         // Remove any error styling
                         input.classList.remove("invalid");
 
+                        console.log("[QMMS] 📤 Submitting form...");
                         this.submit();
                     });
                 });
