@@ -1,4 +1,5 @@
 import {BaseUIHandler} from './base-handler.mjs';
+import {transformInlineRollShorthands} from "../utils/index.mjs";
 
 /**
  * Handles ProseMirror editor integration
