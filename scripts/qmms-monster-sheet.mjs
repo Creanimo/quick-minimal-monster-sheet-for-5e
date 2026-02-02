@@ -1,11 +1,8 @@
-import {transformInlineRollShorthands} from "./utils/shorthand-processing.mjs";
-import {evalAddSubSafe} from "./utils/math-evaluator.mjs";
-import {enrichActorBiography} from "./utils/text-enricher.mjs";
 import {AdapterFactory} from "./adapters/adapter-factory.mjs";
-import {QMMSFormProcessor, QMMSContextBuilder} from "./core/index.mjs";  // ← UPDATE THIS
+import {QMMSFormProcessor, QMMSContextBuilder} from "./core/index.mjs";
 import {
     UIHandlerManager,
-    AutoSaveHandler,
+    AutosaveHandler,
     MathInputHandler,
     EditorHandler,
     HealthbarHandler
