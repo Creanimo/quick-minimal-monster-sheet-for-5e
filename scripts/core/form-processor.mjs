@@ -101,6 +101,16 @@ export class FormProcessor {
      * @returns {Promise<void>}
      */
     async submitUpdate(actor, updateData) {
-        await actor.update(updateData);
+        console.log("[FormProcessor] Actor before:", actor.name);
+
+        try {
+            await actor.update(updateData);
+            console.log("[FormProcessor] Actor after:", actor.name);
+        } catch (err) {
+            console.error("[FormProcessor] Update failed:", err);
+            if (game.user.isGM) {
+                ui.notifications.error("Actor update failed: " + err.message);
+            }
+        }
     }
 }
