@@ -1,26 +1,29 @@
-import {QMMSBaseConfig} from './base-config.mjs';
+import { QMMSBaseConfig } from '../config/base-config.mjs';
 
+export const TEMPLATE_PATH = "modules/quick-minimal-monster-sheet/templates/qmms-monster-sheet.hbs";
+
+/**
+ * D&D 5e system configuration
+ */
 export class QMMSDnd5eConfig extends QMMSBaseConfig {
     constructor(options = {}) {
         super({
-            moduleId: options.moduleId || "quick-minimal-monster-sheet-for-5e",
+            moduleId: options.moduleId || "quick-minimal-monster-sheet",
             systemId: "dnd5e",
-            templatePath: options.templatePath || "modules/quick-minimal-monster-sheet-for-5e/templates/qmms-monster-sheet.hbs"
+            templatePath: options.templatePath || "modules/quick-minimal-monster-sheet/templates/qmms-monster-sheet.hbs"
         });
     }
 
     getApplicationOptions() {
         const baseOptions = super.getApplicationOptions();
         return foundry.utils.mergeObject(baseOptions, {
-            id: `${this.moduleId}-sheet`,
+            id: `${this.moduleId}-dnd5e-sheet`,
             classes: [...baseOptions.classes, "qmms5e"]
         });
     }
 
     getAutoSaveFields() {
-        return [
-            'input[name="name"]'
-        ];
+        return ['input[name="name"]'];
     }
 
     getMathEnabledFields() {
@@ -41,7 +44,7 @@ export class QMMSDnd5eConfig extends QMMSBaseConfig {
     }
 
     getSheetLabel() {
-        return "Quick Minimal Monster Sheet for 5e";
+        return "Quick Minimal Monster Sheet (5e)";
     }
 
     getDefenseLabel() {
@@ -56,9 +59,6 @@ export class QMMSDnd5eConfig extends QMMSBaseConfig {
         return "HP";
     }
 
-    /**
-     * Semantic field paths mapped to D&D 5e V13 structure
-     */
     getFieldPaths() {
         return {
             name: "name",
@@ -70,3 +70,4 @@ export class QMMSDnd5eConfig extends QMMSBaseConfig {
         };
     }
 }
+

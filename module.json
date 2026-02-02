@@ -1,5 +1,5 @@
 {
-  "id": "quick-minimal-monster-sheet-for-5e",
+  "id": "quick-minimal-monster-sheet",
   "title": "Quick Minimal Monster Sheet for 5e",
   "description": "A minimal alternative character sheet for D&D 5e monsters, optimized for quick stat entry in your own shorthand.",
   "version": "0.1.0",
@@ -18,6 +18,14 @@
   "styles": [
     "styles/qmms5e.css"
   ],
-  "manifest": "https://raw.github.com/Creanimo/quick-minimal-monster-sheet-for-5e/main/module.json",
-  "download": "https://github.com/Creanimo/quick-minimal-monster-sheet-for-5e/releases/latest/download/module.zip"
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "url": "https://github.com/Creanimo/quick-minimal-monster-sheet/",
+  "manifest": "https://raw.github.com/Creanimo/quick-minimal-monster-sheet/main/module.json",
+  "download": "https://github.com/Creanimo/quick-minimal-monster-sheet/releases/latest/download/module.zip"
 }
