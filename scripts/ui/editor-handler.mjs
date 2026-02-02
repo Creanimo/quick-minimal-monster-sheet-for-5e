@@ -34,18 +34,32 @@ export class EditorHandler extends BaseUIHandler {
             });
         });
 
-// Handle editor save event
-        this._addEventListener(pm, "save", (event) => {
-            console.log("[EditorHandler] Editor save event!");
-            console.log("[EditorHandler] Save event detail:", event.detail);
-            console.log("[EditorHandler] FormData from event:", event.detail?.formData);
 
-            console.log("[EditorHandler] Full form data:", form);
-            console.log("[EditorHandler] ProseMirror value:", pm.value);
+        /**
+         * Handle editor save event
+         */
+        this._addEventListener(pm, "save", async () => {
+            console.log("[EditorHandler] Editor saved, value:", pm.value);
 
-            sheet.submit({preventClose: true, preventRender: false});
-        });
+            // Transform inline rolls directly
+            const biographyPath = this.config.getBiographyFieldName();
+            const biographyRaw = pm.value;
+            const transformed = transformInlineRollShorthands(biographyRaw);
 
+            if (transformed !== biographyRaw) {
+                console.log("[EditorHandler] Transforming:", biographyRaw.slice(0, 50), '→', transformed.slice(0, 50));
+
+                // Update actor directly
+                await sheet.document.update({
+                    [biographyPath]: transformed
+                });
+
+                // Trigger re-render to update display
+                sheet.render(false);
+            } else {
+                console.log("[EditorHandler] No transformation needed");
+            }
+        }, {once: false});
     }
 
     /**

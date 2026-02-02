@@ -1,4 +1,4 @@
-import { transformInlineRollShorthands } from '../utils/shorthand-processing.mjs';
+import {transformInlineRollShorthands} from '../utils/shorthand-processing.mjs';
 
 /**
  * Handles transformation of biography text
@@ -16,9 +16,12 @@ export class BiographyTransformer {
      * @returns {boolean} True if transformation occurred
      */
     transform(data) {
+        console.debug("[BiographyTransformer] Called with data keys:", Object.keys(data));
+
         const biographyRaw = foundry.utils.getProperty(data, this.biographyPath);
 
         if (biographyRaw === undefined || biographyRaw === "") {
+            console.debug("[BiographyTransformer] No biography field found");
             return false;
         }
 
