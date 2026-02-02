@@ -1,11 +1,13 @@
-import { AdapterFactory } from '../adapters/adapter-factory.mjs';
-import { QMMSFormProcessor } from './qmms-form-processor.mjs';
-import { QMMSContextBuilder } from './qmms-context-builder.mjs';
-import { UIHandlerManager,
+import {AdapterFactory} from '../adapters/adapter-factory.mjs';
+import {QMMSFormProcessor} from './qmms-form-processor.mjs';
+import {QMMSContextBuilder} from './qmms-context-builder.mjs';
+import {
+    UIHandlerManager,
     AutosaveHandler,
     MathInputHandler,
     EditorHandler,
-    HealthbarHandler } from '../ui/index.mjs';
+    HealthbarHandler
+} from '../ui/index.mjs';
 
 /**
  * Base sheet class for QMMS sheets
@@ -21,7 +23,7 @@ export class QMMSBaseSheet {
      * @returns {class} Sheet class ready for registration
      */
     static create(options) {
-        const { config, templatePath, moduleId } = options;
+        const {config, templatePath, moduleId} = options;
 
         // Create UI handler manager
         const uiManager = new UIHandlerManager();
@@ -59,31 +61,34 @@ export class QMMSBaseSheet {
             constructor(sheetOptions) {
                 super(sheetOptions);
 
-                // Store references for instance methods
                 this.moduleId = moduleId;
                 this.config = config;
                 this.uiManager = uiManager;
+                this._isUpdating = false;  // ← ADD THIS
 
-                // Re-render on actor updates
+                // Re-render on actor updates (with protection)
                 Hooks.on("updateActor", (actor, changes, options, userId) => {
-                    if (actor === this.document && this.rendered) {
+                    if (actor === this.document && this.rendered && !this._isUpdating) {
+                        console.debug("[QMMS] Actor updated externally, re-rendering");
                         this.render(false);
                     }
                 });
             }
 
+
             /**
              * Custom form submission handler
              */
             async _onSubmitForm(event, form, formData) {
-                console.debug(`[QMMS] Form submitted`);
+                this._isUpdating = true;  // ← PREVENT HOOK RE-RENDER
 
-                // Create adapter and form processor
-                const adapter = AdapterFactory.createAdapter(this.document, this.config);
-                const processor = new QMMSFormProcessor(adapter, this.config);
-
-                // Process the form submission
-                await processor.process(this.document, formData);
+                try {
+                    const adapter = AdapterFactory.createAdapter(this.document, this.config);
+                    const processor = new QMMSFormProcessor(adapter, this.config);
+                    await processor.process(this.document, formData);
+                } finally {
+                    this._isUpdating = false;  // ← ALLOW HOOKS AGAIN
+                }
             }
 
             /**
