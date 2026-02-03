@@ -64,30 +64,39 @@ export class QMMSBaseSheet {
                 this.moduleId = moduleId;
                 this.config = config;
                 this.uiManager = uiManager;
-                this._isUpdating = false;  // ← ADD THIS
+                this._isUpdating = false;
 
-                // Re-render on actor updates (with protection)
+
+                // Re-render on actor updates (protected)
                 Hooks.on("updateActor", (actor, changes, options, userId) => {
                     if (actor === this.document && this.rendered && !this._isUpdating) {
-                        console.debug("[QMMS] Actor updated externally, re-rendering");
+                        console.debug(`[QMMS] External actor update, re-rendering`);
                         this.render(false);
                     }
                 });
             }
 
-
             /**
-             * Custom form submission handler
+             * Single authoritative submit handler
+             * Guards against overlapping submits
              */
             async _onSubmitForm(event, form, formData) {
-                this._isUpdating = true;  // ← PREVENT HOOK RE-RENDER
+                // 🛡️ Prevent overlapping submits
+                if (this._isUpdating) {
+                    console.debug(`[QMMS] Submit skipped (already updating)`);
+                    return;
+                }
+
+                this._isUpdating = true;
 
                 try {
+                    console.debug(`[QMMS] Form submitted`);
+
                     const adapter = AdapterFactory.createAdapter(this.document, this.config);
                     const processor = new QMMSFormProcessor(adapter, this.config);
                     await processor.process(this.document, formData);
                 } finally {
-                    this._isUpdating = false;  // ← ALLOW HOOKS AGAIN
+                    this._isUpdating = false;
                 }
             }
 
